@@ -11,9 +11,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode 26.5
+      - name: Show installed Xcode versions
         run: |
-          sudo xcode-select -s /Applications/Xcode_26.5.app
+          echo "Xcode versions disponíveis:"
+          ls -la /Applications | grep -i Xcode || true
+          echo ""
+          echo "Xcode atualmente selecionado:"
+          xcode-select -p || true
+          echo ""
+          xcodebuild -version || true
+
+      - name: Select Xcode 26.5 or compatible version
+        run: |
+          if [ -d "/Applications/Xcode_26.5.app" ]; then
+            sudo xcode-select -s "/Applications/Xcode_26.5.app"
+          elif [ -d "/Applications/Xcode_26.5.1.app" ]; then
+            sudo xcode-select -s "/Applications/Xcode_26.5.1.app"
+          else
+            echo "Xcode 26.5 não está instalado."
+            echo "Versões disponíveis:"
+            ls -d /Applications/Xcode*.app 2>/dev/null || true
+            exit 1
+          fi
+
+          echo "Xcode selecionado:"
           xcodebuild -version
 
       - name: Setup .NET 9
