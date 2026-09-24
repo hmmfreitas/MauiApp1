@@ -5,23 +5,17 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-15
+    runs-on: macos-26
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode
+      - name: Select Xcode 26.5
         run: |
-          if [ -d "/Applications/Xcode_26.6.app" ]; then
-            sudo xcode-select -s "/Applications/Xcode_26.6.app"
-          elif [ -d "/Applications/Xcode.app" ]; then
-            sudo xcode-select -s "/Applications/Xcode.app"
-          else
-            echo "ERRO: Xcode não encontrado"
-            exit 1
-          fi
+          sudo xcode-select -s "/Applications/Xcode_26.5.app"
 
+          echo "Xcode selecionado:"
           xcode-select -p
           xcodebuild -version
 
