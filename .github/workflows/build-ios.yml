@@ -1,4 +1,4 @@
-﻿name: Build iOS IPA
+name: Build iOS IPA
 
 on:
   workflow_dispatch:
@@ -11,28 +11,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Show Xcode
-        run: |
-          echo "Xcode instalado:"
-          ls -d /Applications/Xcode*.app 2>/dev/null || true
-          echo ""
-          echo "Xcode selecionado:"
-          xcode-select -p || true
-          echo ""
-          xcodebuild -version
-
-      - name: Select available Xcode
+      - name: Select Xcode
         run: |
           if [ -d "/Applications/Xcode_26.6.app" ]; then
             sudo xcode-select -s "/Applications/Xcode_26.6.app"
           elif [ -d "/Applications/Xcode.app" ]; then
             sudo xcode-select -s "/Applications/Xcode.app"
           else
-            echo "ERRO: nenhum Xcode encontrado."
+            echo "ERRO: Xcode não encontrado"
             exit 1
           fi
 
-          echo "Xcode selecionado:"
+          xcode-select -p
           xcodebuild -version
 
       - name: Setup .NET 9
@@ -44,9 +34,15 @@ jobs:
         run: |
           dotnet workload install maui
 
-      - name: Restore
+      - name: Show project
         run: |
-          dotnet restore MauiApp1/MauiApp1.csproj
+          cat MauiApp1/MauiApp1.csproj
+
+      - name: Restore iOS ARM64
+        run: |
+          dotnet restore MauiApp1/MauiApp1.csproj \
+            -p:TargetFramework=net9.0-ios \
+            -p:RuntimeIdentifier=ios-arm64
 
       - name: Publish iOS
         run: |
@@ -70,14 +66,12 @@ jobs:
           APP=$(find . -type d -name "*.app" | head -n 1)
 
           if [ -z "$APP" ]; then
-            echo "ERRO: nenhum arquivo .app foi encontrado."
-            echo "Arquivos gerados:"
-            find . -maxdepth 8 -type f | head -n 200
+            echo "ERRO: nenhum .app foi encontrado"
+            find bin obj -maxdepth 8 -type f 2>/dev/null | head -n 200
             exit 1
           fi
 
-          echo "APP encontrado:"
-          echo "$APP"
+          echo "APP encontrado: $APP"
 
           rm -rf ipa
           mkdir -p ipa/Payload
@@ -87,10 +81,6 @@ jobs:
           cd ipa
           zip -r ../MauiApp1.ipa Payload
           cd ..
-
-          echo "================================="
-          echo "IPA CRIADO COM SUCESSO"
-          echo "================================="
 
           ls -lh MauiApp1.ipa
 
