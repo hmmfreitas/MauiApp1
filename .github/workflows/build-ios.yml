@@ -14,13 +14,13 @@ jobs:
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.300'
+          dotnet-version: '9.0.x'
 
-      - name: Install iOS workload
-        run: dotnet workload install ios
+      - name: Install MAUI workload
+        run: dotnet workload install maui
 
-      - name: Restore
-        run: dotnet restore MauiApp1/MauiApp1.csproj
+      - name: Restore iOS
+        run: dotnet restore MauiApp1/MauiApp1.csproj -p:TargetFramework=net9.0-ios
 
       - name: Build iOS without signing
         run: |
@@ -31,27 +31,39 @@ jobs:
             -p:EnableCodeSigning=false \
             -p:ArchiveOnBuild=false
 
-      - name: Find APP
+      - name: Find iOS app
         run: |
+          echo "Procurando arquivo .app..."
           find . -type d -name "*.app"
 
-      - name: Create IPA
+      - name: Create unsigned IPA
         run: |
           APP=$(find . -type d -name "*.app" | head -n 1)
 
           if [ -z "$APP" ]; then
-            echo "ERRO: nenhum .app encontrado"
+            echo "ERRO: nenhum arquivo .app foi encontrado."
             exit 1
           fi
 
+          echo "APP encontrado:"
+          echo "$APP"
+
           mkdir -p ipa/Payload
+
           cp -R "$APP" ipa/Payload/MauiApp1.app
 
           cd ipa
+
           zip -r ../MauiApp1.ipa Payload
+
+          cd ..
+
+          echo "IPA criado:"
+          ls -lh MauiApp1.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: MauiApp1-IPA
           path: MauiApp1.ipa
+          if-no-files-found: error
