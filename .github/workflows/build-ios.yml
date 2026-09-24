@@ -1,104 +1,102 @@
-name: Build iOS IPA
+﻿name: Build iOS IPA
 
 on:
-workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
-build-ios:
-runs-on: macos-15
+  build-ios:
+    runs-on: macos-15
 
-steps:
-  - name: Checkout
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  - name: Show Xcode
-    run: |
-      echo "Xcode instalado:"
-      ls -d /Applications/Xcode*.app 2>/dev/null || true
-      echo ""
-      echo "Xcode selecionado:"
-      xcode-select -p
-      echo ""
-      xcodebuild -version
+      - name: Show Xcode
+        run: |
+          echo "Xcode instalado:"
+          ls -d /Applications/Xcode*.app 2>/dev/null || true
+          echo ""
+          echo "Xcode selecionado:"
+          xcode-select -p || true
+          echo ""
+          xcodebuild -version
 
-  - name: Select available Xcode
-    run: |
-      if [ -d "/Applications/Xcode_26.6.app" ]; then
-        sudo xcode-select -s "/Applications/Xcode_26.6.app"
-      elif [ -d "/Applications/Xcode.app" ]; then
-        sudo xcode-select -s "/Applications/Xcode.app"
-      else
-        echo "ERRO: nenhum Xcode encontrado."
-        exit 1
-      fi
+      - name: Select available Xcode
+        run: |
+          if [ -d "/Applications/Xcode_26.6.app" ]; then
+            sudo xcode-select -s "/Applications/Xcode_26.6.app"
+          elif [ -d "/Applications/Xcode.app" ]; then
+            sudo xcode-select -s "/Applications/Xcode.app"
+          else
+            echo "ERRO: nenhum Xcode encontrado."
+            exit 1
+          fi
 
-      echo "Xcode selecionado:"
-      xcodebuild -version
+          echo "Xcode selecionado:"
+          xcodebuild -version
 
-  - name: Setup .NET 9
-    uses: actions/setup-dotnet@v4
-    with:
-      dotnet-version: '9.0.x'
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
 
-  - name: Install iOS workload
-    run: |
-      dotnet workload install maui-ios
+      - name: Install MAUI workload
+        run: |
+          dotnet workload install maui
 
-  - name: Restore iOS
-    run: |
-      dotnet restore MauiApp1/MauiApp1.csproj \
-        -f net9.0-ios
+      - name: Restore
+        run: |
+          dotnet restore MauiApp1/MauiApp1.csproj
 
-  - name: Build iOS without signing
-    run: |
-      dotnet publish MauiApp1/MauiApp1.csproj \
-        -f net9.0-ios \
-        -c Release \
-        -r ios-arm64 \
-        --no-restore \
-        -p:EnableCodeSigning=false \
-        -p:CodesignKey="" \
-        -p:CodesignProvision="" \
-        -p:ArchiveOnBuild=false
+      - name: Publish iOS
+        run: |
+          dotnet publish MauiApp1/MauiApp1.csproj \
+            -f net9.0-ios \
+            -c Release \
+            -r ios-arm64 \
+            --no-restore \
+            -p:EnableCodeSigning=false \
+            -p:CodesignKey="" \
+            -p:CodesignProvision="" \
+            -p:ArchiveOnBuild=false
 
-  - name: Find APP
-    run: |
-      echo "Procurando arquivos .app..."
-      find . -type d -name "*.app" -print
+      - name: Find APP
+        run: |
+          echo "Procurando .app..."
+          find . -type d -name "*.app" -print
 
-  - name: Create unsigned IPA
-    run: |
-      APP=$(find . -type d -name "*.app" | head -n 1)
+      - name: Create unsigned IPA
+        run: |
+          APP=$(find . -type d -name "*.app" | head -n 1)
 
-      if [ -z "$APP" ]; then
-        echo "ERRO: nenhum arquivo .app foi encontrado."
-        echo "Conteúdo de bin/:"
-        find bin -maxdepth 6 -type f 2>/dev/null || true
-        exit 1
-      fi
+          if [ -z "$APP" ]; then
+            echo "ERRO: nenhum arquivo .app foi encontrado."
+            echo "Arquivos gerados:"
+            find . -maxdepth 8 -type f | head -n 200
+            exit 1
+          fi
 
-      echo "APP encontrado:"
-      echo "$APP"
+          echo "APP encontrado:"
+          echo "$APP"
 
-      rm -rf ipa
-      mkdir -p ipa/Payload
+          rm -rf ipa
+          mkdir -p ipa/Payload
 
-      cp -R "$APP" ipa/Payload/MauiApp1.app
+          cp -R "$APP" ipa/Payload/MauiApp1.app
 
-      cd ipa
-      zip -r ../MauiApp1.ipa Payload
-      cd ..
+          cd ipa
+          zip -r ../MauiApp1.ipa Payload
+          cd ..
 
-      echo ""
-      echo "================================="
-      echo "IPA CRIADO COM SUCESSO"
-      echo "================================="
+          echo "================================="
+          echo "IPA CRIADO COM SUCESSO"
+          echo "================================="
 
-      ls -lh MauiApp1.ipa
+          ls -lh MauiApp1.ipa
 
-  - name: Upload IPA
-    uses: actions/upload-artifact@v4
-    with:
-      name: MauiApp1-IPA
-      path: MauiApp1.ipa
-      if-no-files-found: error
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: MauiApp1-IPA
+          path: MauiApp1.ipa
+          if-no-files-found: error
