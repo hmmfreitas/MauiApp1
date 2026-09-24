@@ -5,11 +5,16 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-latest
+    runs-on: macos-15
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Select Xcode 26.5
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.5.app
+          xcodebuild -version
 
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v4
@@ -20,7 +25,9 @@ jobs:
         run: dotnet workload install maui
 
       - name: Restore iOS
-        run: dotnet restore MauiApp1/MauiApp1.csproj -p:TargetFramework=net9.0-ios
+        run: |
+          dotnet restore MauiApp1/MauiApp1.csproj \
+            -p:TargetFramework=net9.0-ios
 
       - name: Build iOS without signing
         run: |
@@ -31,9 +38,9 @@ jobs:
             -p:EnableCodeSigning=false \
             -p:ArchiveOnBuild=false
 
-      - name: Find iOS app
+      - name: Find APP
         run: |
-          echo "Procurando arquivo .app..."
+          echo "Procurando .app..."
           find . -type d -name "*.app"
 
       - name: Create unsigned IPA
@@ -49,13 +56,10 @@ jobs:
           echo "$APP"
 
           mkdir -p ipa/Payload
-
           cp -R "$APP" ipa/Payload/MauiApp1.app
 
           cd ipa
-
           zip -r ../MauiApp1.ipa Payload
-
           cd ..
 
           echo "IPA criado:"
