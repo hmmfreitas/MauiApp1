@@ -14,10 +14,10 @@ jobs:
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '9.0.300'
 
-      - name: Install MAUI workload
-        run: dotnet workload install maui
+      - name: Install iOS workload
+        run: dotnet workload install ios
 
       - name: Restore
         run: dotnet restore MauiApp1/MauiApp1.csproj
@@ -31,9 +31,8 @@ jobs:
             -p:EnableCodeSigning=false \
             -p:ArchiveOnBuild=false
 
-      - name: Find app
+      - name: Find APP
         run: |
-          echo "Procurando .app..."
           find . -type d -name "*.app"
 
       - name: Create IPA
@@ -41,11 +40,9 @@ jobs:
           APP=$(find . -type d -name "*.app" | head -n 1)
 
           if [ -z "$APP" ]; then
-            echo "ERRO: nenhum arquivo .app foi encontrado."
+            echo "ERRO: nenhum .app encontrado"
             exit 1
           fi
-
-          echo "APP encontrado: $APP"
 
           mkdir -p ipa/Payload
           cp -R "$APP" ipa/Payload/MauiApp1.app
